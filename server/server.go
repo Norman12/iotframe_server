@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -47,7 +48,9 @@ var (
 )
 
 type Server struct {
-	participants  map[string]*Participant
+	m            sync.Mutex
+	participants map[string]*Participant
+
 	configuration *Configuration
 	logger        *zap.Logger
 	media         *Media
@@ -107,6 +110,9 @@ func uuidHandler(s *Server) func(http.ResponseWriter, *http.Request) {
 			writeResponse(w, nil, ErrInvalidKey)
 			return
 		}
+
+		s.m.Lock()
+		defer s.m.Unlock()
 
 		if len(s.participants) > 1 {
 			writeResponse(w, nil, ErrNoSlots)
